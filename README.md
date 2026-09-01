@@ -9,7 +9,7 @@ PC頁面
 
 適配手機版
 
-<img width="530" height="1188" alt="92f9b85fb5f6e493d2c5d3e545f851f0" src="https://github.com/user-attachments/assets/d77393dc-0a5d-4a67-b094-91a0f3e6ad18" />
+<img width="530" height="1188" alt="92f9b85fb5f6e493d2c5d3e545f851f0" src="https://github.com/user-attachments/assets/1e2828e4-60f5-4e23-b39c-e0eb7f7c7d73" />
 
 左右分頁嘅網上記事簿：左頁標題列表，右頁內容編輯。支援 Markdown、代碼高亮、上傳圖片/文件、密碼保護。
 
