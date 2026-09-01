@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📄 分享記事</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { overflow-y: auto; height: auto; min-height: 100vh; background: var(--bg); }
+    .share-wrap {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 32px 24px 60px;
+    }
+    .share-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .share-brand { color: var(--accent); font-size: 15px; font-weight: 600; }
+    .share-title {
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+    .share-locked {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .share-empty {
+      text-align: center;
+      color: var(--text-dim);
+      padding: 80px 20px;
+    }
+    .share-empty .ico { font-size: 56px; margin-bottom: 16px; opacity: 0.5; }
+    .share-error {
+      text-align: center;
+      color: var(--red);
+      padding: 60px 20px;
+    }
+    .share-meta { color: var(--text-dim); font-size: 12px; margin-bottom: 8px; }
+    .share-unlock {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 360px;
+      margin-top: 16px;
+    }
+    .share-pwd-err { color: var(--red); font-size: 13px; min-height: 18px; }
+    .footer-note {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 12px;
+      text-align: center;
+    }
+    /* 覆用預覽樣式 */
+    .share-body { line-height: 1.8; font-size: 15px; }
+    .share-body h1,.share-body h2,.share-body h3{color:var(--accent);margin:.9em 0 .4em;}
+    .share-body h1{font-size:1.6em;border-bottom:1px solid var(--border);padding-bottom:8px;}
+    .share-body h2{font-size:1.35em;}
+    .share-body p{margin:.6em 0;}
+    .share-body ul,.share-body ol{padding-left:1.6em;margin:.5em 0;}
+    .share-body code{background:var(--bg-panel);padding:2px 6px;border-radius:4px;font-family:Consolas,monospace;font-size:.9em;}
+    .share-body pre{background:#16161e;border:1px solid var(--border);border-radius:8px;padding:14px;overflow-x:auto;margin:.9em 0;}
+    .share-body pre code{background:transparent;padding:0;}
+    .share-body img{max-width:100%;border-radius:8px;margin:10px 0;}
+    .share-body blockquote{border-left:3px solid var(--accent);padding-left:12px;color:var(--text-dim);margin:.7em 0;}
+    .share-body table{border-collapse:collapse;margin:.9em 0;}
+    .share-body th,.share-body td{border:1px solid var(--border);padding:7px 14px;}
+    .share-body a{color:var(--accent);}
+    .btn { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="share-wrap">
+    <div class="share-head">
+      <span class="share-brand">📒 網上記事簿 · 分享</span>
+      <button class="btn btn-primary btn-sm" id="btnBack">← 返回</button>
+    </div>
+
+    <div id="shareContent">
+      <div class="share-empty" id="loading">
+        <div class="ico">⏳</div>
+        <p>載入中...</p>
+      </div>
+    </div>
+
+    <div class="footer-note">由 📒 網上記事簿 生成嘅唯讀分享</div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    let box;
+    (async function init() {
+      const params = new URLSearchParams(location.search);
+      const id = params.get('id');
+      box = document.getElementById('shareContent');
+
+      document.getElementById('btnBack').addEventListener('click', () => {
+        history.length > 1 ? history.back() : (location.href = '/');
+      });
+
+      if (!id) {
+        box.innerHTML = '<div class="share-error">❌ 缺少分享 ID，連結唔正確</div>';
+        return;
+      }
+
+      try {
+        const resp = await fetch('/api/share/' + encodeURIComponent(id));
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          box.innerHTML = `<div class="share-error">❌ ${err.error || '分享唔存在或已取消'}</div>`;
+          return;
+        }
+        const data = await resp.json();
+
+        if (data.locked) {
+          // 鎖定分享：顯示密碼輸入框，驗證通過後由 renderShare 展示內容
+          box.innerHTML = `
+            <div class="share-title">${escapeHtml(data.title || '（無標題）')}</div>
+            <div class="share-locked">🔒 呢篇記事已設密碼保護，輸入密碼即可查看</div>
+            <div class="share-unlock">
+              <input type="password" id="sharePwd" class="modal-input" placeholder="輸入解鎖密碼" autocomplete="off">
+              <button class="btn btn-primary" id="shareUnlockBtn">查看內容</button>
+              <div class="share-pwd-err" id="sharePwdErr"></div>
+            </div>`;
+          const btn = document.getElementById('shareUnlockBtn');
+          const input = document.getElementById('sharePwd');
+          const err = document.getElementById('sharePwdErr');
+          async function doUnlock() {
+            const pwd = input.value;
+            if (!pwd) { err.textContent = '請輸入密碼'; return; }
+            const hash = await sha256(pwd);
+            try {
+              const r = await fetch('/api/share/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, hash })
+              });
+              const v = await r.json();
+              if (v.match) {
+                renderShare(v);
+              } else {
+                err.textContent = '密碼錯誤，請重試';
+                input.value = '';
+                input.focus();
+              }
+            } catch (e) {
+              err.textContent = '驗證失敗：' + e.message;
+            }
+          }
+          btn.addEventListener('click', doUnlock);
+          input.addEventListener('keydown', e => { if (e.key === 'Enter') doUnlock(); });
+          return;
+        }
+
+        renderShare(data);
+      } catch (e) {
+        box.innerHTML = `<div class="share-error">❌ 載入失敗：${escapeHtml(e.message)}</div>`;
+      }
+    })();
+
+    // 渲染分享內容
+    function renderShare(data) {
+      const html = marked.parse(data.content || '', { breaks: true, gfm: true });
+      const date = new Date(data.sharedAt).toLocaleString('zh-HK');
+      box.innerHTML = `
+        <div class="share-meta">🗓️ 分享時間：${date}</div>
+        <div class="share-title">${escapeHtml(data.title || '（無標題）')}</div>
+        <div class="share-body">${html}</div>`;
+
+      box.querySelectorAll('pre code').forEach(block => {
+        if (typeof hljs !== 'undefined') hljs.highlightElement(block);
+      });
+    }
+
+    // SHA-256 哈希（與 app.js 相同實現）
+    async function sha256(text) {
+      const data = new TextEncoder().encode(text);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      })[c]);
+    }
+  </script>
+</body>
+</html>

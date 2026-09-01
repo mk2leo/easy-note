@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📒 MK2網上記事簿</title>
+  <!-- highlight.js 代碼高亮 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <link rel="stylesheet" href="style.v7.css">
+</head>
+<body>
+  <div class="app">
+    <!-- 移動端遮罩 -->
+    <div class="mobile-overlay hidden" id="mobileOverlay"></div>
+
+    <!-- 移動端浮動漢堡按鈕（始終可見） -->
+    <button class="mobile-fab" id="mobileFab" title="記事列表"><span></span><span></span><span></span></button>
+
+    <!-- ======== 左頁：標題列表 ======== -->
+    <aside class="sidebar">
+      <div class="mobile-header">
+        <button class="btn btn-ghost tb-btn mobile-close" id="mobileClose" title="關閉列表">✕</button>
+        <span class="mobile-title">📒 MK2記事簿</span>
+      </div>
+      <div class="sidebar-header">
+        <h1 class="logo">📒 MK2記事簿</h1>
+        <button id="btnNewNote" class="btn btn-primary btn-block" title="新增記事">
+          <span class="plus">＋</span> 新增記事
+        </button>
+      </div>
+      <div class="note-list" id="noteList">
+        <div class="empty-hint" id="emptyHint">未有記事，按「新增記事」開始</div>
+      </div>
+      <div class="sidebar-footer">
+        <span class="note-count" id="noteCount">0 篇</span>
+      </div>
+    </aside>
+
+    <!-- ======== 分割線（可拖曳） ======== -->
+    <div class="divider" id="divider"></div>
+
+    <!-- ======== 右頁：內容 ======== -->
+    <main class="content" id="content">
+      <!-- 未選中狀態 -->
+      <div class="placeholder" id="placeholder">
+        <div class="placeholder-icon">📖</div>
+        <p>左邊揀一篇記事，或者按「＋ 新增記事」開始書寫</p>
+      </div>
+
+      <!-- 記事編輯區 -->
+      <div class="note-editor hidden" id="noteEditor">
+        <!-- 工具列 -->
+        <div class="toolbar">
+          <div class="tb-left">
+            <button class="btn tb-btn mobile-menu" id="mobileMenu" title="記事列表">☰</button>
+            <button class="btn tb-btn" id="btnDelete" title="刪除記事">🗑️</button>
+            <label class="btn tb-btn" title="上傳圖片">
+              🖼️<input type="file" id="fileImage" accept="image/*" multiple hidden>
+            </label>
+            <label class="btn tb-btn" title="上傳文件">
+              📎<input type="file" id="fileDoc" multiple hidden>
+            </label>
+            <span class="toolbar-sep"></span>
+            <button class="btn tb-btn" id="btnPreview" title="切換預覽">👁️</button>
+          </div>
+          <div class="tb-right">
+            <label class="switch-label" title="密碼保護">
+              🔒 <input type="checkbox" id="lockSwitch">
+            </label>
+            <button class="btn btn-sm tb-share" id="btnShare" title="分享 / 取消分享">🔗 分享</button>
+            <button class="btn btn-primary btn-sm" id="btnSave" title="儲存 (Ctrl+S)">💾 儲存</button>
+          </div>
+        </div>
+
+        <!-- 密碼保護列（開啟鎖時顯示） -->
+        <div class="lock-bar hidden" id="lockBar">
+          <div class="lock-field">
+            <span>🔑 密碼：</span>
+            <input type="text" id="lockPassword" placeholder="設定解鎖密碼" autocomplete="off">
+          </div>
+          <div class="lock-field">
+            <span>🔁 確認：</span>
+            <input type="text" id="lockConfirm" placeholder="再次輸入密碼" autocomplete="off">
+          </div>
+          <span class="lock-tip">解鎖後才可查看內容</span>
+        </div>
+
+        <!-- 標題輸入 -->
+        <input type="text" class="title-input" id="noteTitle" placeholder="輸入標題...">
+
+        <!-- 編輯 / 預覽 區域 -->
+        <div class="edit-area">
+          <textarea class="editor" id="noteBody" placeholder="用 Markdown 書寫內容...&#10;&#10;支援：&#10;- 代碼高亮：&#96;&#96;&#96;python ... &#96;&#96;&#96;&#10;- 插入圖片：按工具列 🖼️ 或貼上圖片（即時顯示縮圖）&#10;- 上傳文件：按工具列 📎"></textarea>
+          <div class="preview hidden" id="preview"></div>
+          <!-- 圖片即時縮圖列（編輯模式下，貼上圖片即顯示） -->
+          <div class="img-strip hidden" id="imgStrip">
+            <div class="img-strip-label">🖼️ 貼入嘅圖片（即時顯示）</div>
+            <div class="img-strip-list" id="imgStripList"></div>
+          </div>
+        </div>
+
+        <!-- 附件列表 -->
+        <div class="attachments hidden" id="attachments">
+          <div class="att-title">📎 附件</div>
+          <div class="att-list" id="attList"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 密碼解鎖彈窗 -->
+  <div class="modal-mask hidden" id="unlockModal">
+    <div class="modal">
+      <div class="modal-title">🔒 呢篇記事已鎖定</div>
+      <p class="modal-sub">請輸入密碼解鎖後檢視內容</p>
+      <input type="password" class="modal-input" id="unlockInput" placeholder="輸入解鎖密碼">
+      <div class="modal-error" id="unlockError"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btnUnlockCancel">取消</button>
+        <button class="btn btn-primary" id="btnUnlockOk">解鎖</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分享連結彈窗 -->
+  <div class="modal-mask hidden" id="shareModal">
+    <div class="modal modal-wide">
+      <div class="modal-title" id="shareModalTitle">🔗 分享記事</div>
+      <p class="modal-sub" id="shareModalSub">複製連結，將呢篇記事分享俾其他人</p>
+      <div class="share-url-box">
+        <input type="text" class="modal-input" id="shareUrl" readonly>
+        <button class="btn btn-primary btn-sm" id="btnCopyUrl">複製</button>
+      </div>
+      <div class="share-lock-warn hidden" id="shareLockWarn">⚠️ 呢篇記事已設密碼保護，分享出去都只會顯示標題，內容唔會公開</div>
+      <div class="share-note" id="shareNote">分享後，任何人打開條連結都可以睇到內容；可隨時取消分享。</div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btnShareClose">關閉</button>
+        <button class="btn btn-danger btn-sm" id="btnUnshare">✖ 取消分享</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/turndown/7.1.2/turndown.min.js"></script>
+  <script src="app.v9.js"></script>
+</body>
+</html>
