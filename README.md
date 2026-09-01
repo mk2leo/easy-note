@@ -1,4 +1,8 @@
 # 📒 網上記事簿（測試版）
+<img width="1544" height="769" alt="image" src="https://github.com/user-attachments/assets/8b19a5fd-f0a2-47a6-aedf-23f1ba820e10" />
+
+適配手機版
+<img width="1060" height="2376" alt="92f9b85fb5f6e493d2c5d3e545f851f0" src="https://github.com/user-attachments/assets/d77393dc-0a5d-4a67-b094-91a0f3e6ad18" />
 
 左右分頁嘅網上記事簿：左頁標題列表，右頁內容編輯。支援 Markdown、代碼高亮、上傳圖片/文件、密碼保護。
 
