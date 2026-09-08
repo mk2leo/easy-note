@@ -518,15 +518,17 @@ function renderAttachments(note) {
     const item = document.createElement('div');
     item.className = 'att-item';
 
-    const name = document.createElement('span');
-    name.className = 'att-name';
-    name.textContent = att.name;
-    name.title = att.name;
-
+    // 下載圖標（放在文件名左邊，與刪除按鈕分開）
     const link = document.createElement('a');
     link.href = att.url;
     link.target = '_blank';
     link.textContent = '⬇';
+    link.title = '下載';
+
+    const name = document.createElement('span');
+    name.className = 'att-name';
+    name.textContent = att.name;
+    name.title = att.name;
 
     const del = document.createElement('span');
     del.className = 'att-del';
@@ -534,11 +536,11 @@ function renderAttachments(note) {
     del.title = '移除附件';
     del.addEventListener('click', (e) => {
       e.stopPropagation();
-      removeAttachment(att.id);
+      removeAttachment(att.id, att.name);
     });
 
-    item.appendChild(name);
     item.appendChild(link);
+    item.appendChild(name);
     item.appendChild(del);
     els.attList.appendChild(item);
   });
@@ -631,9 +633,11 @@ async function saveCurrent() {
 }
 
 // ---------- 移除附件 ----------
-function removeAttachment(attId) {
+function removeAttachment(attId, attName) {
   const note = notes.find(n => n.id === currentId);
   if (!note) return;
+  const name = attName || '附件';
+  if (!confirm(`確定要移除附件「${name}」嗎？`)) return;
   note.attachments = (note.attachments || []).filter(a => a.id !== attId);
   note.updated = Date.now();
   saveNotes();
