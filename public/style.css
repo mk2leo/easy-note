@@ -308,23 +308,33 @@ body {
 .att-title { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
 .att-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .att-item {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  width: 100%;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 13px;
-  max-width: 240px;
 }
+.att-item a { color: var(--accent); text-decoration: none; flex-shrink: 0; padding: 2px 4px; }
 .att-item .att-name {
+  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.att-item a { color: var(--accent); text-decoration: none; }
-.att-item .att-del { color: var(--red); cursor: pointer; font-size: 12px; }
+.att-item .att-del {
+  color: var(--red);
+  cursor: pointer;
+  font-size: 12px;
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.att-item .att-del:hover { background: rgba(243, 139, 168, 0.15); }
 
 /* ===== 彈窗 ===== */
 .modal-mask {
